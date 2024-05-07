@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DocumentPayload } from './payloads/document.payload';
+import {
+  CreateDocumentPayload,
+  UpdateDocumentPayload,
+} from './payloads/document.payload';
 import { v4 as uuid } from 'uuid';
 import { DocumentEntity } from 'src/entities/document.entity';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Logger } from '@nestjs/common';
-import { UUID } from 'crypto';
 
 /**
  * @export
@@ -21,17 +23,15 @@ export class DocumentService {
 
   private readonly logger = new Logger('DocumentService');
 
-  constructor(
-    protected readonly documentEntityManager: EntityManager,
-  ) {}
+  constructor(protected readonly documentEntityManager: EntityManager) {}
 
   /**
    * @public
    * @async
-   * @param {DocumentPayload} request
+   * @param {CreateDocumentPayload} request
    * @returns {Promise<string>}
    */
-  public async create(payload: DocumentPayload): Promise<string> {
+  public async create(payload: CreateDocumentPayload): Promise<string> {
     const id = uuid();
     const currentDateTime = new Date();
 
@@ -45,9 +45,9 @@ export class DocumentService {
 
     await this.documentEntityManager.persistAndFlush(document);
 
-    const document_json = JSON.stringify(document)
+    const document_json = JSON.stringify(document);
 
-    this.logger.debug(`Document created ${document_json}`)
+    this.logger.debug(`Document created ${document_json}`);
 
     return document_json;
   }
@@ -59,12 +59,67 @@ export class DocumentService {
    * @returns {Promise<string>}
    */
   public async get(id: string): Promise<string> {
-    const document = await this.documentEntityManager.findOneOrFail(DocumentEntity, {id: id});
+    const document = await this.documentEntityManager.findOneOrFail(
+      DocumentEntity,
+      { id: id },
+    );
 
-    const document_json = JSON.stringify(document)
+    const document_json = JSON.stringify(document);
 
-    this.logger.debug(`Document found ${document_json}`)
+    this.logger.debug(`Document found ${document_json}`);
 
     return document_json;
+  }
+
+  /**
+   * @public
+   * @async
+   * @param {UpdateDocumentPayload} payload
+   * @returns {Promise<string>}
+   */
+  public async update(payload: UpdateDocumentPayload): Promise<string> {
+    const document = await this.documentEntityManager.findOneOrFail(
+      DocumentEntity,
+      { id: payload.id },
+    );
+
+    const currentDateTime = new Date();
+
+    Object.keys(payload).forEach((key) => {
+      if (document.hasOwnProperty(key)) {
+        document[key] = payload[key];
+      }
+    });
+
+    document.last_updated_at = currentDateTime;
+
+    await this.documentEntityManager.persistAndFlush(document);
+
+    const document_json = JSON.stringify(document);
+
+    this.logger.debug(`Document updated ${document_json}`);
+
+    return document_json;
+  }
+
+  /**
+   * @public
+   * @async
+   * @param {string} id
+   * @returns {Promise<string>}
+   */
+  public async delete(id: string): Promise<string> {
+    const document = await this.documentEntityManager.findOneOrFail(
+      DocumentEntity,
+      { id: id },
+    );
+
+    await this.documentEntityManager.remove(document).flush();
+
+    const returnMessage = `Document with id: ${id} deleted`
+
+    this.logger.debug(returnMessage);
+
+    return returnMessage
   }
 }

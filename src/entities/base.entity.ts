@@ -35,7 +35,7 @@ export class BaseEntity {
     nullable: true,
     type: 'timestamp without time zone',
   })
-  public readonly last_updated_at?: Date;
+  public last_updated_at?: Date;
 
   constructor(id: string, created_at: Date, last_updated_at: Date) {
     this.id = id;

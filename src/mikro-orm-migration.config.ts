@@ -1,5 +1,5 @@
-import { PostgreSqlDriver, defineConfig } from "@mikro-orm/postgresql";
-import { Migrator } from "@mikro-orm/migrations";
+import { PostgreSqlDriver, defineConfig } from '@mikro-orm/postgresql';
+import { Migrator } from '@mikro-orm/migrations';
 
 /**
  * NOTE: Used for dockerized mikro-orm-job that runs `migration:up`.
@@ -14,7 +14,7 @@ const config = defineConfig({
     warnWhenNoEntities: true,
   },
   migrations: {
-    path: "./dist/migrations",
+    path: './dist/migrations',
     transactional: true,
     dropTables: false,
     safe: true,

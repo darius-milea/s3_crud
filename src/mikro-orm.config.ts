@@ -3,7 +3,7 @@ import { Options, UnderscoreNamingStrategy } from '@mikro-orm/core';
 import { defineConfig } from '@mikro-orm/postgresql';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
-import migrationConfig from "./mikro-orm-migration.config";
+import migrationConfig from './mikro-orm-migration.config';
 import { MigrationGenerator } from './libs/orm/migratior';
 
 dotenv.config({ path: resolve('.env') });
@@ -26,7 +26,7 @@ const config: Options = defineConfig({
   migrations: {
     path: migrationConfig.migrations.path,
     pathTs: `${process.cwd()}/migrations`,
-    glob: "!(*.d).{js,ts}",
+    glob: '!(*.d).{js,ts}',
     snapshot: true,
     generator: MigrationGenerator,
     transactional: migrationConfig.migrations.transactional,

@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsUUID, IsNotEmpty } from 'class-validator';
 
-export class DocumentPayload {
+export class CreateDocumentPayload {
   @IsOptional()
   @IsString()
   file_name: string;
@@ -8,4 +8,10 @@ export class DocumentPayload {
   @IsOptional()
   @IsString()
   description: string;
+}
+
+export class UpdateDocumentPayload extends CreateDocumentPayload {
+  @IsUUID('4')
+  @IsNotEmpty()
+  id: string;
 }
