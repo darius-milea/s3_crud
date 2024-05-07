@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { DocumentService } from './document.service';
 import {
   CreateDocumentPayload,

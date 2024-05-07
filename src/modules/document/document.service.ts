@@ -116,10 +116,10 @@ export class DocumentService {
 
     await this.documentEntityManager.remove(document).flush();
 
-    const returnMessage = `Document with id: ${id} deleted`
+    const returnMessage = `Document with id: ${id} deleted`;
 
     this.logger.debug(returnMessage);
 
-    return returnMessage
+    return returnMessage;
   }
 }
