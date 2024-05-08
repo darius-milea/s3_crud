@@ -6,25 +6,22 @@ import {
   Param,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
+  Header,
+  Response,
+  StreamableFile,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
-import {
-  CreateDocumentPayload,
-  UpdateDocumentPayload,
-} from './payloads/document.payload';
 import { ApiBody, ApiParam, ApiOperation } from '@nestjs/swagger';
 import { FindOneParams } from './payloads/find-one.payload';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { DescriptionPayload } from './payloads/description.payload';
+import { Response as Res } from 'express';
 
 @Controller('document')
 export class DocumentController {
   public constructor(private readonly documentService: DocumentService) {}
-
-  @Post('/')
-  @ApiOperation({ summary: 'Create Document' })
-  @ApiBody({ type: CreateDocumentPayload })
-  public async create(@Body() payload: CreateDocumentPayload): Promise<any> {
-    return this.documentService.create(payload);
-  }
 
   @Get(':id')
   @ApiParam({
@@ -33,15 +30,18 @@ export class DocumentController {
     format: 'uuid',
   })
   @ApiOperation({ summary: 'Get Document by Id.' })
-  public async get(@Param() params: FindOneParams): Promise<any> {
-    return this.documentService.get(params.id);
-  }
+  @Header('Content-Disposition', 'attachment; filename="test.docx"')
+  public async get(@Param() params: FindOneParams, @Response({ passthrough: true }) response: Res): Promise<any> {
+    const {buffer, fileName, mimetype} = await this.documentService.get(params.id);
 
-  @Patch('/')
-  @ApiOperation({ summary: 'Update Document' })
-  @ApiBody({ type: UpdateDocumentPayload })
-  public async update(@Body() payload: UpdateDocumentPayload): Promise<any> {
-    return this.documentService.update(payload);
+    var fileExt = fileName.split('.').pop();
+
+    response.set({
+      "Content-Type": mimetype,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+   });
+
+    return new StreamableFile(buffer)    
   }
 
   @Delete(':id')
@@ -51,8 +51,14 @@ export class DocumentController {
     format: 'uuid',
   })
   @ApiOperation({ summary: 'Delete Document by id' })
-  @ApiBody({ type: UpdateDocumentPayload })
+  @ApiBody({ type: FindOneParams })
   public async delete(@Param() params: FindOneParams): Promise<any> {
     return this.documentService.delete(params.id);
+  }
+
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFile(@UploadedFile() file: Express.Multer.File, @Body() description: DescriptionPayload) {
+    return this.documentService.upload(file, description);
   }
 }

@@ -52,6 +52,24 @@
           "primary": false,
           "nullable": true,
           "mappedType": "text"
+        },
+        "mimetype": {
+          "name": "mimetype",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "text"
+        },
+        "size": {
+          "name": "size",
+          "type": "int",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "mappedType": "integer"
         }
       },
       "name": "document",

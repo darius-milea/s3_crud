@@ -19,7 +19,7 @@ export const awsConnectionConfig: AwsConnectionOptions = {
 };
 
 export const s3Config: S3ModuleOptions = {
-  bucket: process.env.S3_BUCKET || 'none',
+  bucket: process.env.AWS_S3_BUCKET || 'none',
   aws_connection: awsConnectionConfig,
 };
 

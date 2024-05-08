@@ -1,13 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  CreateDocumentPayload,
-  UpdateDocumentPayload,
-} from './payloads/document.payload';
 import { v4 as uuid } from 'uuid';
 import { DocumentEntity } from 'src/entities/document.entity';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Logger } from '@nestjs/common';
 import { S3Service } from 'src/libs/s3/services/s3.service';
+import { DescriptionPayload } from './payloads/description.payload';
+import { FileResponseObject } from './types';
 
 /**
  * @export
@@ -31,80 +29,58 @@ export class DocumentService {
   /**
    * @public
    * @async
-   * @param {CreateDocumentPayload} request
-   * @returns {Promise<string>}
-   */
-  public async create(payload: CreateDocumentPayload): Promise<string> {
-    const id = uuid();
-    const currentDateTime = new Date();
-
-    const document = new DocumentEntity(
-      id,
-      currentDateTime,
-      currentDateTime,
-      payload.file_name,
-      payload.description,
-    );
-
-    await this.documentEntityManager.persistAndFlush(document);
-
-    const document_json = JSON.stringify(document);
-
-    this.logger.debug(`Document created ${document_json}`);
-    this.logger.debug(await this.s3Service.listBuckets());
-
-    return document_json;
-  }
-
-  /**
-   * @public
-   * @async
    * @param {string} id
    * @returns {Promise<string>}
    */
-  public async get(id: string): Promise<string> {
-    const document = await this.documentEntityManager.findOneOrFail(
+  public async get(id: string): Promise<FileResponseObject> {
+    const document_metadata = await this.documentEntityManager.findOneOrFail(
       DocumentEntity,
       { id: id },
     );
 
-    const document_json = JSON.stringify(document);
+    const document_json = JSON.stringify(document_metadata);
+
+    const s3_document_buffer = await this.s3Service.getFile(id)
 
     this.logger.debug(`Document found ${document_json}`);
 
-    return document_json;
+    return {
+      buffer: s3_document_buffer,
+      fileName: document_metadata.file_name,
+      mimetype: document_metadata.mimetype
+    }
   }
 
-  /**
-   * @public
-   * @async
-   * @param {UpdateDocumentPayload} payload
-   * @returns {Promise<string>}
-   */
-  public async update(payload: UpdateDocumentPayload): Promise<string> {
-    const document = await this.documentEntityManager.findOneOrFail(
-      DocumentEntity,
-      { id: payload.id },
-    );
+  // /**
+  //  * @public
+  //  * @async
+  //  * @param {UpdateDocumentPayload} payload
+  //  * @returns {Promise<string>}
+  //  */
+  // public async update(payload: UpdateDocumentPayload): Promise<string> {
+  //   const document = await this.documentEntityManager.findOneOrFail(
+  //     DocumentEntity,
+  //     { id: payload.id },
+  //   );
 
-    const currentDateTime = new Date();
+  //   const currentDateTime = new Date();
 
-    Object.keys(payload).forEach((key) => {
-      if (document.hasOwnProperty(key)) {
-        document[key] = payload[key];
-      }
-    });
+  //   Object.keys(payload).forEach((key) => {
+  //     if (document.hasOwnProperty(key)) {
+  //       document[key] = payload[key];
+  //     }
+  //   });
 
-    document.last_updated_at = currentDateTime;
+  //   document.last_updated_at = currentDateTime;
 
-    await this.documentEntityManager.persistAndFlush(document);
+  //   await this.documentEntityManager.persistAndFlush(document);
 
-    const document_json = JSON.stringify(document);
+  //   const document_json = JSON.stringify(document);
 
-    this.logger.debug(`Document updated ${document_json}`);
+  //   this.logger.debug(`Document updated ${document_json}`);
 
-    return document_json;
-  }
+  //   return document_json;
+  // }
 
   /**
    * @public
@@ -126,4 +102,36 @@ export class DocumentService {
 
     return returnMessage;
   }
+
+  /**
+   * @public
+   * @async
+   * @param {string} id
+   * @returns {Promise<string>}
+   */
+  public async upload(file: Express.Multer.File, description: DescriptionPayload): Promise<string> {
+    const id = uuid();
+    const currentDateTime = new Date();
+
+    const document = new DocumentEntity(
+      id,
+      currentDateTime,
+      currentDateTime,
+      file.originalname,
+      description.description,
+      file.mimetype,
+      file.size,
+    );
+
+    await this.documentEntityManager.persistAndFlush(document);
+
+    await this.s3Service.uploadFile(id, file.buffer)
+
+    const document_json = JSON.stringify(document);
+
+    this.logger.debug(`Document uploaded ${document_json}`);
+
+    return document_json;
+  }
+
 }
