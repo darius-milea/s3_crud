@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   CreateDocumentPayload,
   UpdateDocumentPayload,
@@ -7,6 +7,7 @@ import { v4 as uuid } from 'uuid';
 import { DocumentEntity } from 'src/entities/document.entity';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Logger } from '@nestjs/common';
+import { S3Service } from 'src/libs/s3/services/s3.service';
 
 /**
  * @export
@@ -22,8 +23,10 @@ export class DocumentService {
    */
 
   private readonly logger = new Logger('DocumentService');
+  @Inject('S3_DOCUMENT_TOKEN')
+  private readonly s3Service: S3Service;
 
-  constructor(protected readonly documentEntityManager: EntityManager) {}
+  constructor(private readonly documentEntityManager: EntityManager) {}
 
   /**
    * @public
@@ -48,6 +51,7 @@ export class DocumentService {
     const document_json = JSON.stringify(document);
 
     this.logger.debug(`Document created ${document_json}`);
+    this.logger.debug(await this.s3Service.listBuckets());
 
     return document_json;
   }

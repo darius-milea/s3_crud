@@ -1,0 +1,43 @@
+version: "3.8"
+services:
+  db:
+    container_name: simple-db
+    image: postgres:16-alpine
+    command: [ "postgres", "-c", "wal_level=logical" ]
+    ports:
+      - "5445:5432"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-U", "postgres" ]
+      interval: 5s
+      timeout: 1s
+      retries: 2
+  localstack:
+    container_name: localstack
+    image: localstack/localstack
+    ports:
+      - '4566:4566'
+    environment:
+      - SERVICES=s3
+      - AWS_DEFAULT_REGION=eu-west-2
+      - HOSTNAME=localstack
+      - DEBUG=1
+  awscli:
+    image: garland/aws-cli-docker
+    container_name: awscli
+    depends_on:
+      - localstack
+    environment:
+      - AWS_DEFAULT_REGION=eu-west-2
+      - AWS_ACCESS_KEY_ID=xxx
+      - AWS_SECRET_ACCESS_KEY=xxx
+      - AWS_SESSION_TOKEN=xxx
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sleep 5
+        aws --endpoint-url=http://localstack:4566 s3 mb s3://documents-bucket --region eu-west-2 --output table | cat

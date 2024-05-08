@@ -35,8 +35,10 @@ $ npm install
 ## Running the app
 
 ```bash
-# spin local docker postgres
-$ docker run --name nestjs-postgres --publish 5446:5432 -e POSTGRES_PASSWORD=postgres -d postgres
+# Start postgres and S3 with docker compose
+
+$ cd deployment/local/
+$ docker-compose up -d
 
 # copy .env.example to .env
 
