@@ -1,5 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { S3Client, ListBucketsCommand, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { S3ModuleOptions } from '../types';
 
 @Injectable()
@@ -18,18 +23,6 @@ export class S3Service {
     });
   }
 
-  public async listBuckets(): Promise<string> {
-    const command = new ListBucketsCommand({});
-
-    try {
-      const { Owner, Buckets } = await this.s3_client.send(command);
-      this.logger.debug(`${Buckets.map((b) => ` • ${b.Name}`).join('\n')}`);
-      return `${Owner.DisplayName} owns ${Buckets.length} bucket${Buckets.length === 1 ? '' : 's'}`;
-    } catch (err) {
-      this.logger.error(err);
-    }
-  }
-
   /**
    * Uploads file to S3 Bucket
    *
@@ -40,7 +33,6 @@ export class S3Service {
    * @returns {Promise<string>} - A promise that resolves and returns the URL of the file stored on S3 Bucket.
    */
   async uploadFile(fileKey: string, file: Buffer): Promise<string> {
-
     const command = new PutObjectCommand({
       Bucket: this.s3Config.bucket,
       Key: fileKey,
@@ -51,7 +43,6 @@ export class S3Service {
 
     return response.toString();
   }
-  
 
   /**
    * @async
@@ -70,23 +61,23 @@ export class S3Service {
       this.logger.debug({
         message: `Fetching file from S3 bucket`,
         fileKey,
-        bucket: this.s3Config.bucket
+        bucket: this.s3Config.bucket,
       });
 
       const response = await this.s3_client.send(command);
 
       if (!response.Body) {
-        throw new Error("File body is empty");
+        throw new Error('File body is empty');
       }
 
       this.logger.debug(`Transforming response to byte array ${fileKey}`);
 
       const buffer = Buffer.from(await response.Body.transformToByteArray());
 
-      return buffer
+      return buffer;
     } catch (err) {
       this.logger.error({
-        message: err?.message || "Error while getting file from s3",
+        message: err?.message || 'Error while getting file from s3',
         stack: err?.stack,
         fileKey,
       });
@@ -95,34 +86,32 @@ export class S3Service {
     }
   }
 
-//   /**
-//    * Deletes file from S3 Bucket
-//    *
-//    * @async
-//    * @method deleteFile
-//    * @param {string} fileKey - The filename which we'll use to identify and delete the file from the bucket.
-//    * @returns {Promise<void>} - A promise that resolves when we've deleted the file.
-//    */
-//   async deleteFile(fileKey: string): Promise<void> {
-//     const command = new DeleteObjectCommand({
-//       Bucket: this.s3Config.bucket,
-//       Key: fileKey,
-//     });
+  /**
+   * Deletes file from S3 Bucket
+   *
+   * @async
+   * @method deleteFile
+   * @param {string} fileKey - The filename which we'll use to identify and delete the file from the bucket.
+   * @returns {Promise<void>} - A promise that resolves when we've deleted the file.
+   */
+  async deleteFile(fileKey: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: this.s3Config.bucket,
+      Key: fileKey,
+    });
 
-//     try {
-//       this.logger.debug(`Deleting s3 flle with key ${fileKey}`);
+    try {
+      this.logger.debug(`Deleting s3 file with key ${fileKey}`);
 
-//       const response = await this.s3_client.send(command);
+      await this.s3_client.send(command);
+    } catch (err) {
+      this.logger.error({
+        message: err?.message || 'Error while deleting file from s3',
+        stack: err?.stack,
+        fileKey,
+      });
 
-//       this.logger.log(`S3 object was deleted`, response.$metadata);
-//     } catch (err) {
-//       this.logger.error({
-//         message: err?.message || "Error while deleting file from s3",
-//         stack: err?.stack,
-//         fileKey,
-//       });
-
-//       throw err;
-//     }
-//   }
+      throw err;
+    }
+  }
 }

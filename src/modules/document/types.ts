@@ -1,5 +1,5 @@
-export interface FileResponseObject{
-    buffer: Buffer;
-    fileName: string;
-    mimetype: string;
+export interface FileResponseObject {
+  buffer: Buffer;
+  fileName: string;
+  mimetype: string;
 }

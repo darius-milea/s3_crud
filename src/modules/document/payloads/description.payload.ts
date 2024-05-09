@@ -1,7 +1,7 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsOptional, IsString } from 'class-validator';
 
 export class DescriptionPayload {
-    @IsOptional()
-    @IsString()
-    description: string;
-  }
+  @IsOptional()
+  @IsString()
+  description: string;
+}

@@ -32,7 +32,7 @@ export class DocumentEntity extends BaseEntity {
     super(id, created_at, last_updated_at);
     this.file_name = file_name;
     this.description = description;
-    this.mimetype = mimetype
-    this.size = size
+    this.mimetype = mimetype;
+    this.size = size;
   }
 }

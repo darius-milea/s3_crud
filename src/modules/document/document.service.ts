@@ -4,7 +4,6 @@ import { DocumentEntity } from 'src/entities/document.entity';
 import { EntityManager } from '@mikro-orm/postgresql';
 import { Logger } from '@nestjs/common';
 import { S3Service } from 'src/libs/s3/services/s3.service';
-import { DescriptionPayload } from './payloads/description.payload';
 import { FileResponseObject } from './types';
 
 /**
@@ -40,47 +39,63 @@ export class DocumentService {
 
     const document_json = JSON.stringify(document_metadata);
 
-    const s3_document_buffer = await this.s3Service.getFile(id)
+    const s3_document_buffer = await this.s3Service.getFile(id);
 
     this.logger.debug(`Document found ${document_json}`);
 
     return {
       buffer: s3_document_buffer,
       fileName: document_metadata.file_name,
-      mimetype: document_metadata.mimetype
-    }
+      mimetype: document_metadata.mimetype,
+    };
   }
 
-  // /**
-  //  * @public
-  //  * @async
-  //  * @param {UpdateDocumentPayload} payload
-  //  * @returns {Promise<string>}
-  //  */
-  // public async update(payload: UpdateDocumentPayload): Promise<string> {
-  //   const document = await this.documentEntityManager.findOneOrFail(
-  //     DocumentEntity,
-  //     { id: payload.id },
-  //   );
+  /**
+   * @public
+   * @async
+   * @param {Express.Multer.File} file: The file to replace the previous file
+   * @param {string} id: The id of the file to be replaced
+   * @returns {Promise<string>}
+   */
+  public async update(
+    file: Express.Multer.File,
+    id: string,
+    description: string | undefined,
+  ): Promise<string> {
+    const document = await this.documentEntityManager.findOneOrFail(
+      DocumentEntity,
+      { id: id },
+    );
 
-  //   const currentDateTime = new Date();
+    const currentDateTime = new Date();
 
-  //   Object.keys(payload).forEach((key) => {
-  //     if (document.hasOwnProperty(key)) {
-  //       document[key] = payload[key];
-  //     }
-  //   });
+    const updatedMetadata = {
+      id: id,
+      last_updated_at: currentDateTime,
+      file_name: file.originalname,
+      description: description,
+      mimetype: file.mimetype,
+      size: file.size,
+    };
 
-  //   document.last_updated_at = currentDateTime;
+    Object.keys(updatedMetadata).forEach((key) => {
+      if (document.hasOwnProperty(key)) {
+        if (updatedMetadata[key] != undefined)
+          document[key] = updatedMetadata[key];
+      }
+    });
 
-  //   await this.documentEntityManager.persistAndFlush(document);
+    await this.documentEntityManager.persistAndFlush(document);
 
-  //   const document_json = JSON.stringify(document);
+    await this.s3Service.deleteFile(id);
+    await this.s3Service.uploadFile(id, file.buffer);
 
-  //   this.logger.debug(`Document updated ${document_json}`);
+    const document_json = JSON.stringify(document);
 
-  //   return document_json;
-  // }
+    this.logger.debug(`Document updated ${document_json}`);
+
+    return document_json;
+  }
 
   /**
    * @public
@@ -96,6 +111,8 @@ export class DocumentService {
 
     await this.documentEntityManager.remove(document).flush();
 
+    await this.s3Service.deleteFile(id);
+
     const returnMessage = `Document with id: ${id} deleted`;
 
     this.logger.debug(returnMessage);
@@ -106,10 +123,14 @@ export class DocumentService {
   /**
    * @public
    * @async
-   * @param {string} id
+   * @param {Express.Multer.File} file: File to be uploaded
+   * @param {string} description: The description of the file
    * @returns {Promise<string>}
    */
-  public async upload(file: Express.Multer.File, description: DescriptionPayload): Promise<string> {
+  public async upload(
+    file: Express.Multer.File,
+    description: string,
+  ): Promise<string> {
     const id = uuid();
     const currentDateTime = new Date();
 
@@ -118,14 +139,14 @@ export class DocumentService {
       currentDateTime,
       currentDateTime,
       file.originalname,
-      description.description,
+      description,
       file.mimetype,
       file.size,
     );
 
     await this.documentEntityManager.persistAndFlush(document);
 
-    await this.s3Service.uploadFile(id, file.buffer)
+    await this.s3Service.uploadFile(id, file.buffer);
 
     const document_json = JSON.stringify(document);
 
@@ -133,5 +154,4 @@ export class DocumentService {
 
     return document_json;
   }
-
 }
