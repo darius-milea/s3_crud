@@ -31,6 +31,7 @@
     "@aws-sdk/client-sqs": "^3.563.0",
     "@aws-sdk/client-sts": "^3.556.0",
     "@aws-sdk/credential-providers": "^3.563.0",
+    "@aws-sdk/lib-storage": "^3.598.0",
     "@mikro-orm/cli": "^6.2.3",
     "@mikro-orm/core": "^6.2.3",
     "@mikro-orm/migrations": "^6.2.3",

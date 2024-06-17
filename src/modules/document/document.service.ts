@@ -5,6 +5,7 @@ import { EntityManager } from '@mikro-orm/postgresql';
 import { Logger } from '@nestjs/common';
 import { S3Service } from 'src/libs/s3/services/s3.service';
 import { FileResponseObject } from './types';
+import { Readable } from "stream";
 
 /**
  * @export
@@ -88,7 +89,14 @@ export class DocumentService {
     await this.documentEntityManager.persistAndFlush(document);
 
     await this.s3Service.deleteFile(id);
-    await this.s3Service.uploadFile(id, file.buffer);
+    const uploadResponse = this.s3Service.uploadFile(
+      id,
+      Readable.from(file.buffer),
+    );
+    uploadResponse.on('httpUploadProgress', (progress) =>
+      console.log(progress),
+    );
+    await uploadResponse.done();
 
     const document_json = JSON.stringify(document);
 
@@ -146,7 +154,14 @@ export class DocumentService {
 
     await this.documentEntityManager.persistAndFlush(document);
 
-    await this.s3Service.uploadFile(id, file.buffer);
+    const uploadResponse = this.s3Service.uploadFile(
+      id,
+      Readable.from(file.buffer),
+    );
+    uploadResponse.on('httpUploadProgress', (progress) =>
+      console.log(progress),
+    );
+    await uploadResponse.done();
 
     const document_json = JSON.stringify(document);
 

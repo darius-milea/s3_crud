@@ -1,11 +1,8 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
-import { S3ModuleOptions } from '../types';
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import { DeleteObjectCommand, GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+import { S3ModuleOptions } from "../types";
+import { Readable } from "stream";
 
 @Injectable()
 export class S3Service {
@@ -29,19 +26,18 @@ export class S3Service {
    * @async
    * @method uploadFile
    * @param {string} fileKey - The filename which we'll use to later identify the file.
-   * @param {Buffer} file - A buffer of the file.
+   * @param {ReadableStream} stream - the stream of the file
    * @returns {Promise<string>} - A promise that resolves and returns the URL of the file stored on S3 Bucket.
    */
-  async uploadFile(fileKey: string, file: Buffer): Promise<string> {
-    const command = new PutObjectCommand({
-      Bucket: this.s3Config.bucket,
-      Key: fileKey,
-      Body: file,
+  uploadFile(fileKey: string, stream: Readable): Upload {
+    return new Upload({
+      client: this.s3_client,
+      params: {
+        Bucket: this.s3Config.bucket,
+        Key: fileKey,
+        Body: stream,
+      },
     });
-
-    const response = await this.s3_client.send(command);
-
-    return response.toString();
   }
 
   /**
